@@ -47,9 +47,9 @@ class HistogramWidget(QWidget):
         mx = max(max(r), max(g), max(b))
 
         for i in range(255):
-            r[i] = log(r[i] + 1) / log(mx)
-            g[i] = log(g[i] + 1) / log(mx)
-            b[i] = log(b[i] + 1) / log(mx)
+            r[i] = log(r[i] + 1) / log(mx + 1)
+            g[i] = log(g[i] + 1) / log(mx + 1)
+            b[i] = log(b[i] + 1) / log(mx + 1)
 
         self.r = r
         self.g = g
@@ -72,8 +72,8 @@ class HistogramWidget(QWidget):
 
         qp.drawRect(0, 0, w - 1, h - 1)
         rc = QColor(255, 0, 0)
-        bc = QColor(0, 255, 0)
-        gc = QColor(0, 0, 255)
+        gc = QColor(0, 255, 0)
+        bc = QColor(0, 0, 255)
 
         for x in range(256):
             values = [(self.r[x], rc), (self.g[x], gc), (self.b[x], bc)]
