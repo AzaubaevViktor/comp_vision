@@ -4,31 +4,15 @@ import random
 import sys
 
 import os
-from PyQt5 import QtCore, QtGui
 
-from PyQt5.QtGui import QIcon, QPixmap, QPainter, QFont, QColor as _QColor, QPen
-from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget, QAction, \
+from PyQt5.QtGui import QIcon, QPixmap, QPainter
+from PyQt5.QtWidgets import QApplication, QWidget, QAction, \
     qApp, QMainWindow, QFileDialog, QLabel, QHBoxLayout, QVBoxLayout
-from PyQt5.QtCore import Qt, QRect, QPoint
+from PyQt5.QtCore import Qt
+
+from widgets import ImageWidget, HistogramWidget
 
 
-class QColor(_QColor):
-    def __add__(self, other: "QColor"):
-        return QColor(
-            self.red() + other.red(),
-            self.green() + other.green(),
-            self.blue() + other.blue()
-        )
-
-    def __str__(self):
-        if self.spec() == self.Rgb:
-            return "<QColor {}, {}, {}>".format(
-                self.green(),
-                self.red(),
-                self.blue()
-            )
-
-        return super().__str__()
 
 
 class Separator:
@@ -53,7 +37,7 @@ class Program(QMainWindow):
 
     def _init_ui(self, size):
         self._generate_menubar()
-        self.setGeometry(300, 300, *size)
+        self.setGeometry(100, 100, *size)
 
         self.setWindowTitle('Graphen')
 
@@ -115,186 +99,6 @@ class Program(QMainWindow):
     def status(self, msg, sec=0):
         self.statusBar().showMessage(msg, sec)
 
-    def mousePressEvent(self, event):
-        print(event.pos(), event.button())
-
-    def mouseMoveEvent(self, event):
-        pass
-
-    def paintEvent(self, event):
-        qp = QPainter()
-        qp.begin(self)
-        self.drawText(event, qp)
-        qp.end()
-
-    def drawText(self, event, qp):
-        qp.setPen(Qt.red)
-        size = self.size()
-
-        for i in range(1000):
-            x = random.randint(1, size.width() - 1)
-            y = random.randint(1, size.height() - 1)
-            qp.drawPoint(x, y)
-
-
-class ImageWidget(QWidget):
-    def __init__(self):
-        super().__init__()
-
-        self.orig_pixmap = None
-        self.pixmap = None
-
-        self.initUI()
-
-        self.selection = None
-        self.selection_img = None
-        self.coef = None
-
-    def to_image_rect(self, rect: QRect):
-        return QRect(
-            self.to_image_coord(rect.topLeft()),
-            self.to_image_coord(rect.bottomRight())
-        )
-
-    def to_image_coord(self, point: QPoint):
-        return QPoint(point.x() * self.coef, point.y() * self.coef)
-
-    def from_image_rect(self, rect: QRect):
-        return QRect(
-            self.from_image_coord(rect.topLeft()),
-            self.from_image_coord(rect.bottomRight())
-        )
-
-    def from_image_coord(self, point: QPoint):
-        return QPoint(point.x() / self.coef, point.y() / self.coef)
-
-    def initUI(self):
-        self.setMinimumSize(10, 10)
-
-    def paintEvent(self, e):
-        qp = QPainter()
-        qp.begin(self)
-        self.drawWidget(e, qp)
-        qp.end()
-
-    def resizeEvent(self, event: QtGui.QResizeEvent):
-        self._rescale()
-
-    def drawWidget(self, event, qp):
-        qp.setBrush(QColor(0, 0, 0))
-        qp.setPen(QColor(0, 0, 0))
-
-        if self.orig_pixmap is None:
-            qp.drawText(event.rect(), Qt.AlignCenter, "Open image")
-        else:
-            qp.drawPixmap(0, 0, self.pixmap)
-
-            self._draw_selection(qp)
-
-    def _draw_selection(self, qp):
-        if self.selection is None:
-            return
-        pen = QColor(0, 0, 255, 128)
-        qp.setPen(pen)
-        brush = QColor(0, 0, 128, 128)
-        qp.setBrush(brush)
-        qp.drawRect(self.selection)
-
-    def _rescale(self):
-        if self.orig_pixmap is None:
-            return
-
-        aspect = self.width() / self.height()
-
-        aspect_image = self.orig_pixmap.width() / self.orig_pixmap.height()
-
-        if aspect_image > aspect:
-            self.coef = self.orig_pixmap.width() / self.width()
-            _pixmap = self.orig_pixmap.scaledToWidth(self.width())
-        else:
-            self.coef = self.orig_pixmap.height() / self.height()
-            _pixmap = self.orig_pixmap.scaledToHeight(self.height())
-
-        if self.selection is not None:
-            self.selection = self.from_image_rect(self.selection_img)
-
-        self.pixmap = _pixmap
-
-    def setImage(self, pixmap: QPixmap):
-        self.orig_pixmap = pixmap
-        self.selection = None
-        self.coef = None
-        self._rescale()
-        self.update()
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.selection = QRect(event.pos(), event.pos())
-            self.selection_img = None
-        self.update()
-
-    def mouseMoveEvent(self, event):
-        self.selection.setBottomRight(event.pos())
-        self.update()
-
-    def mouseReleaseEvent(self, event):
-        self.selection.setBottomRight(event.pos())
-        self.selection_img = self.to_image_rect(self.selection)
-        self.update()
-
-
-class HistogramWidget(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.r = [x / 256 for x in range(256)]
-        self.g = [1 - x / 256 for x in range(256)]
-        self.b = [0.5 + x / 1024 for x in range(256)]
-        self.initUI()
-
-    def initUI(self):
-        self.setMinimumSize(258, 16)
-
-    def paintEvent(self, e):
-        qp = QPainter()
-        qp.begin(self)
-        self.drawWidget(qp)
-        qp.end()
-
-    def drawWidget(self, qp):
-        size = self.size()
-        w = size.width()
-        h = size.height()
-
-        qp.setBrush(QColor(0, 0, 0))
-
-        qp.drawRect(0, 0, w - 1, h - 1)
-        rc = QColor(255, 0, 0)
-        bc = QColor(0, 255, 0)
-        gc = QColor(0, 0, 255)
-
-        for x in range(256):
-            values = [(self.r[x], rc), (self.g[x], gc), (self.b[x], bc)]
-
-            self._drawVLine(qp, values, x + 1)
-
-    def _drawVLine(self, qp, values, posX):
-        values.sort(key=lambda item: item[0])
-
-        first = values[0][1] + values[1][1] + values[2][1]
-        second = values[1][1] + values[2][1]
-        third = values[2][1]
-
-        colors = [first, second, third]
-
-        lines = [(0, values[0][0]), (values[0][0], values[1][0]), (values[1][0], values[2][0])]
-
-        qp.setBrush(Qt.NoBrush)
-        for (start, end), color in zip(lines, colors):
-            pen = QPen(color, 1, Qt.SolidLine)
-
-            qp.setPen(pen)
-            qp.drawLine(posX, (1 - start) * (self.height() - 3) + 1, posX, (1 - end) * (self.height() - 3) + 1)
-
 
 class ProgramWidget(QWidget):
     def __init__(self, parent):
@@ -307,7 +111,6 @@ class ProgramWidget(QWidget):
 
         hbox = QHBoxLayout()
         hbox.addWidget(self.canvas, 20)
-        # hbox.addStretch(1)
 
         vbox = QVBoxLayout()
         vbox.addWidget(self.hist)
