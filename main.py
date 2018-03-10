@@ -4,10 +4,12 @@ import random
 import sys
 
 import os
+from PyQt5 import QtCore, QtGui
+
 from PyQt5.QtGui import QIcon, QPixmap, QPainter, QFont, QColor as _QColor, QPen
 from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget, QAction, \
     qApp, QMainWindow, QFileDialog, QLabel, QHBoxLayout, QVBoxLayout
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QRect, QPoint
 
 
 class QColor(_QColor):
@@ -139,9 +141,32 @@ class ImageWidget(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.orig_pixmap = None
         self.pixmap = None
 
         self.initUI()
+
+        self.selection = None
+        self.selection_img = None
+        self.coef = None
+
+    def to_image_rect(self, rect: QRect):
+        return QRect(
+            self.to_image_coord(rect.topLeft()),
+            self.to_image_coord(rect.bottomRight())
+        )
+
+    def to_image_coord(self, point: QPoint):
+        return QPoint(point.x() * self.coef, point.y() * self.coef)
+
+    def from_image_rect(self, rect: QRect):
+        return QRect(
+            self.from_image_coord(rect.topLeft()),
+            self.from_image_coord(rect.bottomRight())
+        )
+
+    def from_image_coord(self, point: QPoint):
+        return QPoint(point.x() / self.coef, point.y() / self.coef)
 
     def initUI(self):
         self.setMinimumSize(10, 10)
@@ -152,28 +177,69 @@ class ImageWidget(QWidget):
         self.drawWidget(e, qp)
         qp.end()
 
+    def resizeEvent(self, event: QtGui.QResizeEvent):
+        self._rescale()
+
     def drawWidget(self, event, qp):
         qp.setBrush(QColor(0, 0, 0))
         qp.setPen(QColor(0, 0, 0))
 
-        if self.pixmap is None:
+        if self.orig_pixmap is None:
             qp.drawText(event.rect(), Qt.AlignCenter, "Open image")
         else:
-            new_pixmap = self._rescale()
-            qp.drawPixmap(0, 0, new_pixmap)
+            qp.drawPixmap(0, 0, self.pixmap)
+
+            self._draw_selection(qp)
+
+    def _draw_selection(self, qp):
+        if self.selection is None:
+            return
+        pen = QColor(0, 0, 255, 128)
+        qp.setPen(pen)
+        brush = QColor(0, 0, 128, 128)
+        qp.setBrush(brush)
+        qp.drawRect(self.selection)
 
     def _rescale(self):
+        if self.orig_pixmap is None:
+            return
+
         aspect = self.width() / self.height()
 
-        aspect_image = self.pixmap.width() / self.pixmap.height()
+        aspect_image = self.orig_pixmap.width() / self.orig_pixmap.height()
 
         if aspect_image > aspect:
-            return self.pixmap.scaledToWidth(self.width())
+            self.coef = self.orig_pixmap.width() / self.width()
+            _pixmap = self.orig_pixmap.scaledToWidth(self.width())
         else:
-            return self.pixmap.scaledToHeight(self.height())
+            self.coef = self.orig_pixmap.height() / self.height()
+            _pixmap = self.orig_pixmap.scaledToHeight(self.height())
+
+        if self.selection is not None:
+            self.selection = self.from_image_rect(self.selection_img)
+
+        self.pixmap = _pixmap
 
     def setImage(self, pixmap: QPixmap):
-        self.pixmap = pixmap
+        self.orig_pixmap = pixmap
+        self.selection = None
+        self.coef = None
+        self._rescale()
+        self.update()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.selection = QRect(event.pos(), event.pos())
+            self.selection_img = None
+        self.update()
+
+    def mouseMoveEvent(self, event):
+        self.selection.setBottomRight(event.pos())
+        self.update()
+
+    def mouseReleaseEvent(self, event):
+        self.selection.setBottomRight(event.pos())
+        self.selection_img = self.to_image_rect(self.selection)
         self.update()
 
 
