@@ -36,6 +36,10 @@ class Separator:
 class Model:
     def __init__(self, prg):
         self.prg = prg
+        self.pixmap = None
+
+    def open_image(self, fname):
+        self.pixmap = QPixmap(fname)
 
 
 class Program(QMainWindow):
@@ -61,6 +65,8 @@ class Program(QMainWindow):
         fname = QFileDialog.getOpenFileName(self, 'Open file', os.getcwd())[0]
 
         self.model.open_image(fname)
+
+        self.program_widget.set_image(self.model.pixmap)
 
     def _menubar_data(self):
         return [
@@ -192,17 +198,21 @@ class ProgramWidget(QWidget):
         self.pixel_hsv = QLabel('HSV', self)
 
         hbox = QHBoxLayout()
-        hbox.addWidget(self.canvas)
-        hbox.addStretch(1)
+        hbox.addWidget(self.canvas, 20)
+        # hbox.addStretch(1)
 
         vbox = QVBoxLayout()
         vbox.addWidget(self.hist)
         vbox.addWidget(self.pixel_rgb)
         vbox.addWidget(self.pixel_hsv)
 
-        hbox.addLayout(vbox)
+        hbox.addLayout(vbox, 1)
 
         self.setLayout(hbox)
+
+    def set_image(self, pixmap: QPixmap):
+        new_pixmap = pixmap.scaled(self.canvas.size())
+        self.canvas.setPixmap(new_pixmap)
 
 
 if __name__ == '__main__':
