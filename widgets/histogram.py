@@ -1,9 +1,23 @@
+import time
 from numpy import *
 from PyQt5.QtGui import QPainter, QPen, QPixmap, QImage
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import Qt
 
 from utils import QColor
+
+
+def timechecker(orig):
+    def func(self, img: QImage):
+        res = img.width() * img.height()
+        print("==================")
+        print("Res: {:.2f} Kpix".format(res / 1000))
+        st = time.time()
+        orig(self, img)
+        tm = time.time() - st
+        print("Time: {:.2f}s".format(tm))
+        print("Speed: {:.2f}Kpix/s".format(res / 1000 / tm))
+    return func
 
 
 class HistogramWidget(QWidget):
@@ -17,25 +31,25 @@ class HistogramWidget(QWidget):
     def initUI(self):
         self.setMinimumSize(258, 16)
 
+    @timechecker
     def setImage(self, img: QImage):
-
-        r = zeros(256, dtype=int)
-        g = zeros(256, dtype=int)
-        b = zeros(256, dtype=int)
+        r = [0] * 256
+        g = [0] * 256
+        b = [0] * 256
 
         for x in range(img.width()):
             for y in range(img.height()):
-                c = img.pixelColor(x, y)
-                red, green, blue, a = c.getRgb()
+                red, green, blue, a = img.pixelColor(x, y).getRgb()
                 r[red] += 1
                 g[green] += 1
                 b[blue] += 1
 
         mx = max(max(r), max(g), max(b))
 
-        r = log(array(r + 1, dtype=float)) / log(mx)
-        g = log(array(g + 1, dtype=float)) / log(mx)
-        b = log(array(b + 1, dtype=float)) / log(mx)
+        for i in range(255):
+            r[i] = log(r[i] + 1) / log(mx)
+            g[i] = log(g[i] + 1) / log(mx)
+            b[i] = log(b[i] + 1) / log(mx)
 
         self.r = r
         self.g = g
