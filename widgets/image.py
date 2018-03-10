@@ -15,11 +15,11 @@ class ImageWidget(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.orig_pixmap = None
-        self.pixmap = None
+        self.orig_pixmap = None  # type: QPixmap
+        self.pixmap = None  # type: QPixmap
 
-        self.selection = None
-        self.selection_img = None
+        self.selection = None  # type: QRect
+        self.selection_img = None  # type: QRect
         self.coef = None
 
         self._communicate = Communicate()
@@ -29,6 +29,16 @@ class ImageWidget(QWidget):
         self.initUI()
 
     def to_image_rect(self, rect: QRect):
+        rect = QRect(rect)
+        if rect.top() > rect.bottom():
+            _top, _bottom = rect.top(), rect.bottom()
+            rect.setBottom(_top), rect.setTop(_bottom)
+
+        if rect.left() > rect.right():
+            _left, _right = rect.left(), rect.right()
+            rect.setLeft(_right)
+            rect.setRight(_left)
+
         return QRect(
             self.to_image_coord(rect.topLeft()),
             self.to_image_coord(rect.bottomRight())
@@ -108,20 +118,24 @@ class ImageWidget(QWidget):
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.selection = QRect(event.pos(), event.pos())
-            self.selection_img = None
+            self.selection_img = self.to_image_rect(self.selection)
             self.selection_update.emit()
         self.update()
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.LeftButton:
             self.selection.setBottomRight(event.pos())
+            self.selection_img = self.to_image_rect(self.selection)
+            self.selection_update.emit()
         self.update()
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.selection.setBottomRight(event.pos())
             self.selection_img = self.to_image_rect(self.selection)
+            self.selection_update.emit()
         self.update()
 
-    def getSelected(self):
+    @property
+    def selected(self) -> QPixmap:
         return self.orig_pixmap.copy(self.selection_img)

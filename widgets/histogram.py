@@ -1,4 +1,5 @@
-from PyQt5.QtGui import QPainter, QPen
+from numpy import *
+from PyQt5.QtGui import QPainter, QPen, QPixmap, QImage
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import Qt
 
@@ -8,13 +9,39 @@ from utils import QColor
 class HistogramWidget(QWidget):
     def __init__(self):
         super().__init__()
-        self.r = [x / 256 for x in range(256)]
-        self.g = [1 - x / 256 for x in range(256)]
-        self.b = [0.5 + x / 1024 for x in range(256)]
+        self.r = [0] * 256
+        self.g = [0] * 256
+        self.b = [0] * 256
         self.initUI()
 
     def initUI(self):
         self.setMinimumSize(258, 16)
+
+    def setImage(self, img: QImage):
+
+        r = zeros(256, dtype=int)
+        g = zeros(256, dtype=int)
+        b = zeros(256, dtype=int)
+
+        for x in range(img.width()):
+            for y in range(img.height()):
+                c = img.pixelColor(x, y)
+                red, green, blue, a = c.getRgb()
+                r[red] += 1
+                g[green] += 1
+                b[blue] += 1
+
+        mx = max(max(r), max(g), max(b))
+
+        r = log(array(r + 1, dtype=float)) / log(mx)
+        g = log(array(g + 1, dtype=float)) / log(mx)
+        b = log(array(b + 1, dtype=float)) / log(mx)
+
+        self.r = r
+        self.g = g
+        self.b = b
+
+        self.update()
 
     def paintEvent(self, e):
         qp = QPainter()
@@ -52,6 +79,10 @@ class HistogramWidget(QWidget):
 
         qp.setBrush(Qt.NoBrush)
         for (start, end), color in zip(lines, colors):
+            if isnan(end):
+                end = 0
+            if isnan(start):
+                start = 0
             pen = QPen(color, 1, Qt.SolidLine)
 
             qp.setPen(pen)

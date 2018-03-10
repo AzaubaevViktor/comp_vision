@@ -5,13 +5,14 @@ import sys
 
 import os
 
-from PyQt5.QtGui import QIcon, QPixmap, QPainter
+from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QAction, \
     qApp, QMainWindow, QFileDialog, QLabel, QHBoxLayout, QVBoxLayout
-from PyQt5.QtCore import Qt
+
 
 from widgets import ImageWidget, HistogramWidget
 
+from utils import QColor
 
 
 
@@ -104,16 +105,20 @@ class ProgramWidget(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.canvas = ImageWidget()
+        self.image = ImageWidget()
         self.hist = HistogramWidget()
+        self.coord = QLabel("Coord", self)
         self.pixel_rgb = QLabel('RGB', self)
         self.pixel_hsv = QLabel('HSV', self)
 
+        self.image.selection_update.connect(self.selection_upd)
+
         hbox = QHBoxLayout()
-        hbox.addWidget(self.canvas, 20)
+        hbox.addWidget(self.image, 20)
 
         vbox = QVBoxLayout()
         vbox.addWidget(self.hist)
+        vbox.addWidget(self.coord)
         vbox.addWidget(self.pixel_rgb)
         vbox.addWidget(self.pixel_hsv)
 
@@ -121,8 +126,34 @@ class ProgramWidget(QWidget):
 
         self.setLayout(hbox)
 
+    def selection_upd(self):
+        img = self.image.selected.toImage()
+        print(img.width(), img.height())
+
+        coord = self.image.selection_img
+        self.coord.setText("{}, {} x {}, {}".format(
+            coord.left(), coord.top(),
+            coord.right(), coord.bottom()
+        ))
+
+        if 1 == img.width() == img.height():
+            pixel = QColor(img.pixel(0, 0))
+
+            self.pixel_rgb.setText(
+                "{}, {}, {}".format(pixel.red(), pixel.green(), pixel.blue())
+            )
+
+            self.pixel_hsv.setText(
+                "{}, {}, {}".format(pixel.hue(), pixel.saturation(), pixel.value())
+            )
+        else:
+            self.pixel_rgb.setText("Select one pixel")
+            self.pixel_hsv.setText("Select one pixel")
+
+        self.hist.setImage(img)
+
     def set_image(self, pixmap: QPixmap):
-        self.canvas.setImage(pixmap)
+        self.image.setImage(pixmap)
 
 
 if __name__ == '__main__':
