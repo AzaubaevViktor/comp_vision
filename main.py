@@ -135,6 +135,48 @@ class Program(QMainWindow):
             qp.drawPoint(x, y)
 
 
+class ImageWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.pixmap = None
+
+        self.initUI()
+
+    def initUI(self):
+        self.setMinimumSize(10, 10)
+
+    def paintEvent(self, e):
+        qp = QPainter()
+        qp.begin(self)
+        self.drawWidget(e, qp)
+        qp.end()
+
+    def drawWidget(self, event, qp):
+        qp.setBrush(QColor(0, 0, 0))
+        qp.setPen(QColor(0, 0, 0))
+
+        if self.pixmap is None:
+            qp.drawText(event.rect(), Qt.AlignCenter, "Open image")
+        else:
+            new_pixmap = self._rescale()
+            qp.drawPixmap(0, 0, new_pixmap)
+
+    def _rescale(self):
+        aspect = self.width() / self.height()
+
+        aspect_image = self.pixmap.width() / self.pixmap.height()
+
+        if aspect_image > aspect:
+            return self.pixmap.scaledToWidth(self.width())
+        else:
+            return self.pixmap.scaledToHeight(self.height())
+
+    def setImage(self, pixmap: QPixmap):
+        self.pixmap = pixmap
+        self.update()
+
+
 class HistogramWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -192,7 +234,7 @@ class ProgramWidget(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.canvas = QLabel('Open image', self)
+        self.canvas = ImageWidget()
         self.hist = HistogramWidget()
         self.pixel_rgb = QLabel('RGB', self)
         self.pixel_hsv = QLabel('HSV', self)
@@ -211,8 +253,7 @@ class ProgramWidget(QWidget):
         self.setLayout(hbox)
 
     def set_image(self, pixmap: QPixmap):
-        new_pixmap = pixmap.scaled(self.canvas.size())
-        self.canvas.setPixmap(new_pixmap)
+        self.canvas.setImage(pixmap)
 
 
 if __name__ == '__main__':
