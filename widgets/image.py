@@ -28,6 +28,8 @@ class ImageWidget(QWidget):
 
         self.initUI()
 
+        self.endMouse = True
+
     def to_image_rect(self, rect: QRect):
         rect = QRect(rect)
         if rect.top() > rect.bottom():
@@ -119,6 +121,7 @@ class ImageWidget(QWidget):
         if event.button() == Qt.LeftButton:
             self.selection = QRect(event.pos(), event.pos())
             self.selection_img = self.to_image_rect(self.selection)
+            self.endMouse = False
             self.selection_update.emit()
         self.update()
 
@@ -133,9 +136,16 @@ class ImageWidget(QWidget):
         if event.button() == Qt.LeftButton:
             self.selection.setBottomRight(event.pos())
             self.selection_img = self.to_image_rect(self.selection)
+            self.endMouse = True
             self.selection_update.emit()
         self.update()
 
     @property
     def selected(self) -> QPixmap:
-        return self.orig_pixmap.copy(self.selection_img)
+        img = self.orig_pixmap.copy(self.selection_img)
+        if self.endMouse:
+            return img
+        else:
+            coef = img.height() * img.width() / (700000 / 30)
+            coef **= 0.5
+            return img.scaled(img.width() / coef, img.height() / coef)
