@@ -1,6 +1,18 @@
 from PyQt5.QtGui import QColor as _QColor
 
 
+def inrange(value, _min, _max):
+    return max(min(value, _max), _min)
+
+
+def hsv_ranged(h, s, v):
+    return (
+        (h + 360 * 2) % 360,
+        inrange(s, 0, 255),
+        inrange(v, 0, 255)
+    )
+
+
 class QColor(_QColor):
     def __add__(self, other: "QColor"):
         return QColor(

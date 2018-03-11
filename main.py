@@ -5,10 +5,10 @@ import sys
 
 import os
 
-from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtGui import QIcon, QPixmap, QImage
 from PyQt5.QtWidgets import QApplication, QWidget, QAction, \
-    qApp, QMainWindow, QFileDialog, QLabel, QHBoxLayout, QVBoxLayout
-
+    qApp, QMainWindow, QFileDialog, QLabel, QHBoxLayout, QVBoxLayout, QSlider
+from PyQt5.QtCore import Qt
 
 from widgets import ImageWidget, HistogramWidget
 
@@ -40,9 +40,9 @@ class Program(QMainWindow):
     def _open(self):
         fname = QFileDialog.getOpenFileName(self, 'Open file', os.getcwd())[0]
 
-        pixmap = QPixmap(fname)
+        image = QImage(fname)
 
-        self.program_widget.set_image(pixmap)
+        self.program_widget.set_image(image)
 
     def _menubar_data(self):
         return [
@@ -96,12 +96,29 @@ class ProgramWidget(QWidget):
 
         self.image = ImageWidget()
         self.hist = HistogramWidget()
-        self.coord = QLabel("Select pixel", self)
-        self.pixel_rgb = QLabel('Select pixel', self)
-        self.pixel_hsv = QLabel('Select pixel', self)
-        self.pixel_lab = QLabel("Select pixel", self)
+        self.coord = QLabel("", self)
+        self.pixel_rgb = QLabel('', self)
+        self.pixel_hsv = QLabel('', self)
+        self.pixel_lab = QLabel('', self)
+        self.h_slider = QSlider(Qt.Horizontal, self)
+        self.s_slider = QSlider(Qt.Horizontal, self)
+        self.v_slider = QSlider(Qt.Horizontal, self)
+
+        self.h_slider.setMinimum(-180)
+        self.h_slider.setMaximum(180)
+
+        self.s_slider.setMinimum(-255)
+        self.s_slider.setMaximum(255)
+
+        self.v_slider.setMinimum(-255)
+        self.v_slider.setMaximum(255)
+
+        self._set_default()
 
         self.image.selection_update.connect(self.selection_upd)
+        self.h_slider.valueChanged[int].connect(self.slider_update)
+        self.s_slider.valueChanged[int].connect(self.slider_update)
+        self.v_slider.valueChanged[int].connect(self.slider_update)
 
         hbox = QHBoxLayout()
         hbox.addWidget(self.image, 20)
@@ -113,12 +130,40 @@ class ProgramWidget(QWidget):
         vbox.addWidget(self.pixel_hsv)
         vbox.addWidget(self.pixel_lab)
 
+        h_slider_box = QHBoxLayout()
+        h_slider_box.addWidget(QLabel("H:", self))
+        h_slider_box.addWidget(self.h_slider)
+        vbox.addLayout(h_slider_box)
+
+        s_slider_box = QHBoxLayout()
+        s_slider_box.addWidget(QLabel("S:", self))
+        s_slider_box.addWidget(self.s_slider)
+        vbox.addLayout(s_slider_box)
+
+        v_slider_box = QHBoxLayout()
+        v_slider_box.addWidget(QLabel("V:", self))
+        v_slider_box.addWidget(self.v_slider)
+        vbox.addLayout(v_slider_box)
+
         hbox.addLayout(vbox, 1)
 
         self.setLayout(hbox)
 
+    def _set_default(self):
+        self.coord.setText("Select pixel")
+        self.pixel_rgb.setText("Select pixel")
+        self.pixel_hsv.setText("Select pixel")
+        self.pixel_lab.setText("Select pixel")
+
+        self.h_slider.setValue(0)
+
+    def slider_update(self):
+        self.image.shift_hue = self.h_slider.value()
+        self.image.shift_saturation = self.s_slider.value()
+        self.image.shift_value = self.v_slider.value()
+
     def selection_upd(self):
-        img = self.image.selected.toImage()
+        img = self.image.selected
         print(img.width(), img.height())
 
         coord = self.image.selection_img
@@ -146,11 +191,10 @@ class ProgramWidget(QWidget):
             self.pixel_hsv.setText("Select one pixel")
             self.pixel_lab.setText("Select one pixel")
 
-
         self.hist.setImage(img)
 
-    def set_image(self, pixmap: QPixmap):
-        self.image.set_image(pixmap)
+    def set_image(self, image: QImage):
+        self.image.set_image(image)
 
 
 if __name__ == '__main__':
