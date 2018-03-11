@@ -99,6 +99,7 @@ class ProgramWidget(QWidget):
         self.coord = QLabel("Select pixel", self)
         self.pixel_rgb = QLabel('Select pixel', self)
         self.pixel_hsv = QLabel('Select pixel', self)
+        self.pixel_lab = QLabel("Select pixel", self)
 
         self.image.selection_update.connect(self.selection_upd)
 
@@ -110,6 +111,7 @@ class ProgramWidget(QWidget):
         vbox.addWidget(self.coord)
         vbox.addWidget(self.pixel_rgb)
         vbox.addWidget(self.pixel_hsv)
+        vbox.addWidget(self.pixel_lab)
 
         hbox.addLayout(vbox, 1)
 
@@ -135,9 +137,15 @@ class ProgramWidget(QWidget):
             self.pixel_hsv.setText(
                 "H:{}, S:{}, V:{}".format(pixel.hue(), pixel.saturation(), pixel.value())
             )
+
+            self.pixel_lab.setText(
+                "L:{:.1f}, A:{:.1f}, B:{:.1f}".format(*pixel.lab())
+            )
         else:
             self.pixel_rgb.setText("Select one pixel")
             self.pixel_hsv.setText("Select one pixel")
+            self.pixel_lab.setText("Select one pixel")
+
 
         self.hist.setImage(img)
 
