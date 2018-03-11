@@ -60,10 +60,10 @@ class HistogramWidget(QWidget):
     def paintEvent(self, e):
         qp = QPainter()
         qp.begin(self)
-        self.drawWidget(qp)
+        self._draw_widget(qp)
         qp.end()
 
-    def drawWidget(self, qp):
+    def _draw_widget(self, qp):
         size = self.size()
         w = size.width()
         h = size.height()
@@ -78,9 +78,9 @@ class HistogramWidget(QWidget):
         for x in range(256):
             values = [(self.r[x], rc), (self.g[x], gc), (self.b[x], bc)]
 
-            self._drawVLine(qp, values, x + 1)
+            self._draw_v_line(qp, values, x + 1)
 
-    def _drawVLine(self, qp, values, posX):
+    def _draw_v_line(self, qp, values, pos_x):
         values.sort(key=lambda item: item[0])
 
         first = values[0][1] + values[1][1] + values[2][1]
@@ -96,5 +96,5 @@ class HistogramWidget(QWidget):
             pen = QPen(color, 1, Qt.SolidLine)
 
             qp.setPen(pen)
-            qp.drawLine(posX, (1 - start) * (self.height() - 3) + 1, posX, (1 - end) * (self.height() - 3) + 1)
+            qp.drawLine(pos_x, (1 - start) * (self.height() - 3) + 1, pos_x, (1 - end) * (self.height() - 3) + 1)
 

@@ -26,7 +26,7 @@ class ImageWidget(QWidget):
 
         self.selection_update = self._communicate.selection_update
 
-        self.initUI()
+        self._init_ui()
 
         self.endMouse = True
 
@@ -58,19 +58,19 @@ class ImageWidget(QWidget):
     def from_image_coord(self, point: QPoint):
         return QPoint(point.x() / self.coef, point.y() / self.coef)
 
-    def initUI(self):
+    def _init_ui(self):
         self.setMinimumSize(10, 10)
 
     def paintEvent(self, e):
         qp = QPainter()
         qp.begin(self)
-        self.drawWidget(e, qp)
+        self._draw_widget(e, qp)
         qp.end()
 
     def resizeEvent(self, event: QtGui.QResizeEvent):
         self._rescale()
 
-    def drawWidget(self, event, qp):
+    def _draw_widget(self, event, qp):
         qp.setBrush(QColor(0, 0, 0))
         qp.setPen(QColor(0, 0, 0))
 
@@ -110,7 +110,7 @@ class ImageWidget(QWidget):
 
         self.pixmap = _pixmap
 
-    def setImage(self, pixmap: QPixmap):
+    def set_image(self, pixmap: QPixmap):
         self.pixmapOrigin = pixmap
         self.selection = None
         self.coef = None

@@ -15,24 +15,13 @@ from widgets import ImageWidget, HistogramWidget
 from utils import QColor
 
 
-
 class Separator:
     pass
-
-
-class Model:
-    def __init__(self, prg):
-        self.prg = prg
-        self.pixmap = None
-
-    def open_image(self, fname):
-        self.pixmap = QPixmap(fname)
 
 
 class Program(QMainWindow):
     def __init__(self, *size):
         super().__init__()
-        self.model = Model(self)
 
         self._init_ui(size)
 
@@ -51,9 +40,9 @@ class Program(QMainWindow):
     def _open(self):
         fname = QFileDialog.getOpenFileName(self, 'Open file', os.getcwd())[0]
 
-        self.model.open_image(fname)
+        pixmap = QPixmap(fname)
 
-        self.program_widget.set_image(self.model.pixmap)
+        self.program_widget.set_image(pixmap)
 
     def _menubar_data(self):
         return [
@@ -107,9 +96,9 @@ class ProgramWidget(QWidget):
 
         self.image = ImageWidget()
         self.hist = HistogramWidget()
-        self.coord = QLabel("Coord", self)
-        self.pixel_rgb = QLabel('RGB', self)
-        self.pixel_hsv = QLabel('HSV', self)
+        self.coord = QLabel("Select pixel", self)
+        self.pixel_rgb = QLabel('Select pixel', self)
+        self.pixel_hsv = QLabel('Select pixel', self)
 
         self.image.selection_update.connect(self.selection_upd)
 
@@ -140,11 +129,11 @@ class ProgramWidget(QWidget):
             pixel = QColor(img.pixel(0, 0))
 
             self.pixel_rgb.setText(
-                "{}, {}, {}".format(pixel.red(), pixel.green(), pixel.blue())
+                "R:{}, G:{}, B:{}".format(pixel.red(), pixel.green(), pixel.blue())
             )
 
             self.pixel_hsv.setText(
-                "{}, {}, {}".format(pixel.hue(), pixel.saturation(), pixel.value())
+                "H:{}, S:{}, V:{}".format(pixel.hue(), pixel.saturation(), pixel.value())
             )
         else:
             self.pixel_rgb.setText("Select one pixel")
@@ -153,7 +142,7 @@ class ProgramWidget(QWidget):
         self.hist.setImage(img)
 
     def set_image(self, pixmap: QPixmap):
-        self.image.setImage(pixmap)
+        self.image.set_image(pixmap)
 
 
 if __name__ == '__main__':
