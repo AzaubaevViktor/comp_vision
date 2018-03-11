@@ -1,5 +1,5 @@
 import time
-from numpy import *
+from math import log
 from PyQt5.QtGui import QPainter, QPen, QPixmap, QImage
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import Qt
@@ -93,10 +93,6 @@ class HistogramWidget(QWidget):
 
         qp.setBrush(Qt.NoBrush)
         for (start, end), color in zip(lines, colors):
-            if isnan(end):
-                end = 0
-            if isnan(start):
-                start = 0
             pen = QPen(color, 1, Qt.SolidLine)
 
             qp.setPen(pen)

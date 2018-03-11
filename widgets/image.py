@@ -15,7 +15,7 @@ class ImageWidget(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.orig_pixmap = None  # type: QPixmap
+        self.pixmapOrigin = None  # type: QPixmap
         self.pixmap = None  # type: QPixmap
 
         self.selection = None  # type: QRect
@@ -74,7 +74,7 @@ class ImageWidget(QWidget):
         qp.setBrush(QColor(0, 0, 0))
         qp.setPen(QColor(0, 0, 0))
 
-        if self.orig_pixmap is None:
+        if self.pixmapOrigin is None:
             qp.drawText(event.rect(), Qt.AlignCenter, "Open image")
         else:
             qp.drawPixmap(0, 0, self.pixmap)
@@ -91,19 +91,19 @@ class ImageWidget(QWidget):
         qp.drawRect(self.selection)
 
     def _rescale(self):
-        if self.orig_pixmap is None:
+        if self.pixmapOrigin is None:
             return
 
         aspect = self.width() / self.height()
 
-        aspect_image = self.orig_pixmap.width() / self.orig_pixmap.height()
+        aspect_image = self.pixmapOrigin.width() / self.pixmapOrigin.height()
 
         if aspect_image > aspect:
-            self.coef = self.orig_pixmap.width() / self.width()
-            _pixmap = self.orig_pixmap.scaledToWidth(self.width())
+            self.coef = self.pixmapOrigin.width() / self.width()
+            _pixmap = self.pixmapOrigin.scaledToWidth(self.width())
         else:
-            self.coef = self.orig_pixmap.height() / self.height()
-            _pixmap = self.orig_pixmap.scaledToHeight(self.height())
+            self.coef = self.pixmapOrigin.height() / self.height()
+            _pixmap = self.pixmapOrigin.scaledToHeight(self.height())
 
         if self.selection is not None:
             self.selection = self.from_image_rect(self.selection_img)
@@ -111,13 +111,15 @@ class ImageWidget(QWidget):
         self.pixmap = _pixmap
 
     def setImage(self, pixmap: QPixmap):
-        self.orig_pixmap = pixmap
+        self.pixmapOrigin = pixmap
         self.selection = None
         self.coef = None
         self._rescale()
         self.update()
 
     def mousePressEvent(self, event):
+        if self.pixmapOrigin is None:
+            return
         if event.button() == Qt.LeftButton:
             self.selection = QRect(event.pos(), event.pos())
             self.selection_img = self.to_image_rect(self.selection)
@@ -126,6 +128,8 @@ class ImageWidget(QWidget):
         self.update()
 
     def mouseMoveEvent(self, event):
+        if self.pixmapOrigin is None:
+            return
         if event.buttons() == Qt.LeftButton:
             self.selection.setBottomRight(event.pos())
             self.selection_img = self.to_image_rect(self.selection)
@@ -133,6 +137,8 @@ class ImageWidget(QWidget):
         self.update()
 
     def mouseReleaseEvent(self, event):
+        if self.pixmapOrigin is None:
+            return
         if event.button() == Qt.LeftButton:
             self.selection.setBottomRight(event.pos())
             self.selection_img = self.to_image_rect(self.selection)
@@ -142,10 +148,13 @@ class ImageWidget(QWidget):
 
     @property
     def selected(self) -> QPixmap:
-        img = self.orig_pixmap.copy(self.selection_img)
-        if self.endMouse:
+        img = self.pixmapOrigin.copy(self.selection_img)
+
+        need = 700000 / 30
+        resolution = img.height() * img.width()
+
+        if self.endMouse or resolution < need:
             return img
         else:
-            coef = img.height() * img.width() / (700000 / 30)
-            coef **= 0.5
+            coef = (resolution / need) ** 0.5
             return img.scaled(img.width() / coef, img.height() / coef)
