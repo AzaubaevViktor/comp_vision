@@ -6,6 +6,7 @@ from PyQt5.QtGui import QPainter, QPixmap, QImage
 from PyQt5.QtWidgets import QWidget
 
 from utils import QColor, hsv_ranged
+from .processing import shift_hsv, rgb_to_hsv
 
 
 class Communicate(QObject):
@@ -20,7 +21,7 @@ class ImageWidget(QWidget):
         self.parent = parent
 
         self.imageOrigin = None  # type: QImage
-        self.image = None  # type: QImage
+        self._image = None  # type: QImage
 
         self.selection = None  # type: QRect
         self.selection_img = None  # type: QRect
@@ -58,20 +59,29 @@ class ImageWidget(QWidget):
         if not self.need_hsv_recalc:
             return
 
-        dh, ds, dv = self._shift_hsv_values
-
-        img = self.image
-        for x in range(self.image.width()):
+        for x in shift_hsv(self._image, *self._shift_hsv_values):
             self.set_status("Recalc HSV {:.1f}%".format(
-                x / self.image.width() * 100
+                x / self._image.width() * 100
             ))
 
-            for y in range(self.image.height()):
-                color = img.pixelColor(x, y)
-                h, s, v, a = color.getHsv()
-                color.setHsv(*hsv_ranged(h + dh, s + ds, v + dv), a)
-                img.setPixelColor(x, y, color)
         self.need_hsv_recalc = False
+
+    @property
+    def ready_image(self):
+        img = self.imageOrigin.copy()
+        for x in shift_hsv(img, *self._shift_hsv_values):
+            self.set_status("Saving: Recalc HSV {:.1f}%".format(
+                x / img.width() * 100
+            ))
+        return img
+
+    def get_hsv_image(self):
+        img = self.ready_image
+        for x in rgb_to_hsv(img):
+            self.set_status("Saving: Convert to HSV {:.1f}%".format(
+                x / img.width() * 100
+            ))
+        return img
 
     def to_image_rect(self, rect: QRect):
         rect = QRect(rect)
@@ -120,7 +130,7 @@ class ImageWidget(QWidget):
         if self.imageOrigin is None:
             qp.drawText(event.rect(), Qt.AlignCenter, "Open image")
         else:
-            qp.drawImage(0, 0, self.image)
+            qp.drawImage(0, 0, self._image)
 
             self._draw_selection(qp)
 
@@ -153,7 +163,7 @@ class ImageWidget(QWidget):
         if self.selection is not None:
             self.selection = self.from_image_rect(self.selection_img)
 
-        self.image = _image
+        self._image = _image
 
         self._shift_hsv()
         self.set_status("Ready")

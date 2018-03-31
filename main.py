@@ -7,7 +7,7 @@ import os
 
 from PyQt5.QtGui import QIcon, QPixmap, QImage
 from PyQt5.QtWidgets import QApplication, QWidget, QAction, \
-    qApp, QMainWindow, QFileDialog, QLabel, QHBoxLayout, QVBoxLayout, QSlider
+    qApp, QMainWindow, QFileDialog, QLabel, QHBoxLayout, QVBoxLayout, QSlider, QMenu
 from PyQt5.QtCore import Qt
 
 from widgets import ImageWidget, HistogramWidget
@@ -46,10 +46,41 @@ class Program(QMainWindow):
 
         self.program_widget.set_image(image)
 
+    def _save_generator(self, arg):
+        def _():
+            self._save_to(arg)
+
+        return _
+
+    def _save_to(self, arg):
+        fname = QFileDialog.getSaveFileName(self, 'Save file', os.getcwd())[0]
+
+        img = None
+
+        if arg == "RGB":
+            img = self.program_widget.image_widget.ready_image
+
+        if arg == "HSV":
+            img = self.program_widget.image_widget.get_hsv_image()
+
+        if img is None:
+            raise ValueError("RGB, HSV, not `{}`".format(arg))
+
+        img.save(fname)
+        self.status("Ready")
+
     def _menubar_data(self):
         return [
             ('&File', [
                 ('&Open', self._open),
+                ("", Separator()),
+                ('Save to', [
+                    ('RGB', self._save_generator("RGB")),
+                    ('HSV', self._save_generator("HSV"))
+                ]),
+                ("Save region to", [
+                    ("Not implemented", None)
+                ]),
                 ("", Separator()),
                 ('&Exit', {'triggered': qApp.quit, 'shortcut': 'Ctrl+Q', 'icon': None}),
             ]),
@@ -80,6 +111,10 @@ class Program(QMainWindow):
                 action.setShortcut(info['shortcut'])
             elif isinstance(info, Separator):
                 menu.addSeparator()
+            elif isinstance(info, list):
+                submenu = QMenu(name, self)
+                menu.addMenu(submenu)
+                self._generate_submenu(submenu, info)
             elif info is None:
                 action = QAction(name, self)
             else:
@@ -96,12 +131,13 @@ class ProgramWidget(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.image = ImageWidget(parent)
-        self.hist = HistogramWidget(parent)
-        self.coord = QLabel("", self)
-        self.pixel_rgb = QLabel('', self)
-        self.pixel_hsv = QLabel('', self)
-        self.pixel_lab = QLabel('', self)
+        self.image_widget = ImageWidget(parent)
+        self.hist_widget = HistogramWidget(parent)
+        self.coord_label = QLabel("", self)
+        self.pixel_rgb_label = QLabel('', self)
+        self.pixel_hsv_label = QLabel('', self)
+        self.pixel_lab_label = QLabel('', self)
+
         self.h_slider = QSlider(Qt.Horizontal, self)
         self.s_slider = QSlider(Qt.Horizontal, self)
         self.v_slider = QSlider(Qt.Horizontal, self)
@@ -123,20 +159,20 @@ class ProgramWidget(QWidget):
 
         self._set_default()
 
-        self.image.selection_update.connect(self.selection_upd)
+        self.image_widget.selection_update.connect(self.selection_upd)
         self.h_slider.sliderReleased.connect(self.slider_update)
         self.s_slider.sliderReleased.connect(self.slider_update)
         self.v_slider.sliderReleased.connect(self.slider_update)
 
         hbox = QHBoxLayout()
-        hbox.addWidget(self.image, 20)
+        hbox.addWidget(self.image_widget, 20)
 
         vbox = QVBoxLayout()
-        vbox.addWidget(self.hist)
-        vbox.addWidget(self.coord)
-        vbox.addWidget(self.pixel_rgb)
-        vbox.addWidget(self.pixel_hsv)
-        vbox.addWidget(self.pixel_lab)
+        vbox.addWidget(self.hist_widget)
+        vbox.addWidget(self.coord_label)
+        vbox.addWidget(self.pixel_rgb_label)
+        vbox.addWidget(self.pixel_hsv_label)
+        vbox.addWidget(self.pixel_lab_label)
 
         h_slider_box = QHBoxLayout()
         h_slider_box.addWidget(QLabel("H:", self))
@@ -158,22 +194,22 @@ class ProgramWidget(QWidget):
         self.setLayout(hbox)
 
     def _set_default(self):
-        self.coord.setText("Select pixel")
-        self.pixel_rgb.setText("Select pixel")
-        self.pixel_hsv.setText("Select pixel")
-        self.pixel_lab.setText("Select pixel")
+        self.coord_label.setText("Select pixel")
+        self.pixel_rgb_label.setText("Select pixel")
+        self.pixel_hsv_label.setText("Select pixel")
+        self.pixel_lab_label.setText("Select pixel")
 
         self.h_slider.setValue(0)
 
     def slider_update(self):
-        self.image.shift_hsv = self.h_slider.value(), self.s_slider.value(), self.v_slider.value()
+        self.image_widget.shift_hsv = self.h_slider.value(), self.s_slider.value(), self.v_slider.value()
 
     def selection_upd(self):
-        img = self.image.selected
+        img = self.image_widget.selected
         print(img.width(), img.height())
 
-        coord = self.image.selection_img
-        self.coord.setText("{}, {} x {}, {}".format(
+        coord = self.image_widget.selection_img
+        self.coord_label.setText("{}, {} x {}, {}".format(
             coord.left(), coord.top(),
             coord.right(), coord.bottom()
         ))
@@ -181,26 +217,26 @@ class ProgramWidget(QWidget):
         if 1 == img.width() == img.height():
             pixel = QColor(img.pixel(0, 0))
 
-            self.pixel_rgb.setText(
+            self.pixel_rgb_label.setText(
                 "R:{}, G:{}, B:{}".format(pixel.red(), pixel.green(), pixel.blue())
             )
 
-            self.pixel_hsv.setText(
+            self.pixel_hsv_label.setText(
                 "H:{}, S:{}, V:{}".format(pixel.hue(), pixel.saturation(), pixel.value())
             )
 
-            self.pixel_lab.setText(
+            self.pixel_lab_label.setText(
                 "L:{:.1f}, A:{:.1f}, B:{:.1f}".format(*pixel.lab())
             )
         else:
-            self.pixel_rgb.setText("Select one pixel")
-            self.pixel_hsv.setText("Select one pixel")
-            self.pixel_lab.setText("Select one pixel")
+            self.pixel_rgb_label.setText("Select one pixel")
+            self.pixel_hsv_label.setText("Select one pixel")
+            self.pixel_lab_label.setText("Select one pixel")
 
-        self.hist.setImage(img)
+        self.hist_widget.calc_image(img)
 
     def set_image(self, image: QImage):
-        self.image.set_image(image)
+        self.image_widget.set_image(image)
 
 
 if __name__ == '__main__':

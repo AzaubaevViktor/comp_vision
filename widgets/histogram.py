@@ -36,7 +36,7 @@ class HistogramWidget(QWidget):
         self.setMinimumSize(258, 16)
 
     @timechecker
-    def setImage(self, img: QImage):
+    def calc_image(self, img: QImage):
         r = [0] * 256
         g = [0] * 256
         b = [0] * 256
