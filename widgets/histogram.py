@@ -10,7 +10,7 @@ from utils import QColor
 def timechecker(orig):
     def func(self, img: QImage):
         res = img.width() * img.height()
-        print("==================")
+        print("======== Histogramm ==========")
         print("Res: {:.2f} Kpix".format(res / 1000))
         st = time.time()
         orig(self, img)

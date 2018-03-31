@@ -2,7 +2,12 @@ from PyQt5.QtGui import QColor as _QColor
 
 
 def inrange(value, _min, _max):
-    return max(min(value, _max), _min)
+    if value > _max:
+        return _max
+    if _min > value:
+        return _min
+    return value
+    # return max(min(value, _max), _min)
 
 
 def hsv_ranged(h, s, v):

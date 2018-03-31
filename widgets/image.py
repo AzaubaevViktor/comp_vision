@@ -59,10 +59,19 @@ class ImageWidget(QWidget):
         if not self.need_hsv_recalc:
             return
 
+        res = self._image.width() * self._image.height()
+        print("========= HSV Shift =========")
+        print("Res: {:.2f} Kpix".format(res / 1000))
+        st = time.time()
+
         for x in shift_hsv(self._image, *self._shift_hsv_values):
             self.set_status("Recalc HSV {:.1f}%".format(
                 x / self._image.width() * 100
             ))
+
+        tm = time.time() - st
+        print("Time: {:.2f}s".format(tm))
+        print("Speed: {:.2f}Kpix/s".format(res / 1000 / tm))
 
         self.need_hsv_recalc = False
 
