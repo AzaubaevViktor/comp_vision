@@ -4,6 +4,7 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import QObject, pyqtSignal, QRect, QPoint, Qt
 from PyQt5.QtGui import QPainter, QPixmap, QImage
 from PyQt5.QtWidgets import QWidget
+
 from utils import QColor, hsv_ranged
 
 
@@ -13,8 +14,10 @@ class Communicate(QObject):
 
 
 class ImageWidget(QWidget):
-    def __init__(self):
+    def __init__(self, parent):
         super().__init__()
+
+        self.parent = parent
 
         self.imageOrigin = None  # type: QImage
         self.image = None  # type: QImage
@@ -32,47 +35,43 @@ class ImageWidget(QWidget):
         self.endMouse = True
 
         self._shift_hsv_values = [0, 0, 0]
+        self.need_hsv_recalc = False
+    
+    def set_status(self, msg, sec=0):
+        self.parent.status(msg, sec)
 
     @property
-    def shift_hue(self):
-        return self._shift_hsv_values[0]
+    def shift_hsv(self):
+        return tuple(self._shift_hsv_values)
 
-    @shift_hue.setter
-    def shift_hue(self, value):
-        self._shift_hsv_values[0] = value
-        self._rescale()
-        self.update()
+    @shift_hsv.setter
+    def shift_hsv(self, value):
+        if len(value) != 3:
+            raise ValueError("Shift_hsv may be 3 int!")
+        self._shift_hsv_values = list(value)
+        self.need_hsv_recalc = True
 
-    @property
-    def shift_saturation(self):
-        return self._shift_hsv_values[1]
-
-    @shift_saturation.setter
-    def shift_saturation(self, value):
-        self._shift_hsv_values[1] = value
-        self._rescale()
-        self.update()
-
-    @property
-    def shift_value(self):
-        return self._shift_hsv_values[2]
-
-    @shift_value.setter
-    def shift_value(self, value):
-        self._shift_hsv_values[2] = value
         self._rescale()
         self.update()
 
     def _shift_hsv(self):
+        if not self.need_hsv_recalc:
+            return
+
         dh, ds, dv = self._shift_hsv_values
 
         img = self.image
         for x in range(self.image.width()):
+            self.set_status("Recalc HSV {:.1f}%".format(
+                x / self.image.width() * 100
+            ))
+
             for y in range(self.image.height()):
                 color = img.pixelColor(x, y)
                 h, s, v, a = color.getHsv()
                 color.setHsv(*hsv_ranged(h + dh, s + ds, v + dv), a)
                 img.setPixelColor(x, y, color)
+        self.need_hsv_recalc = False
 
     def to_image_rect(self, rect: QRect):
         rect = QRect(rect)
@@ -138,6 +137,8 @@ class ImageWidget(QWidget):
         if self.imageOrigin is None:
             return
 
+        self.set_status("Rescaling...")
+
         aspect = self.width() / self.height()
 
         aspect_image = self.imageOrigin.width() / self.imageOrigin.height()
@@ -155,6 +156,7 @@ class ImageWidget(QWidget):
         self.image = _image
 
         self._shift_hsv()
+        self.set_status("Ready")
 
     def set_image(self, image: QImage):
         self.imageOrigin = image

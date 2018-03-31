@@ -21,12 +21,16 @@ def timechecker(orig):
 
 
 class HistogramWidget(QWidget):
-    def __init__(self):
+    def __init__(self, parent):
         super().__init__()
+        self.parent = parent
         self.r = [0] * 256
         self.g = [0] * 256
         self.b = [0] * 256
         self.initUI()
+
+    def set_status(self, msg, sec=0):
+        self.parent.status(msg, sec)
 
     def initUI(self):
         self.setMinimumSize(258, 16)
@@ -36,8 +40,10 @@ class HistogramWidget(QWidget):
         r = [0] * 256
         g = [0] * 256
         b = [0] * 256
-
         for x in range(img.width()):
+            self.set_status("Calculating histogram... {:.1f}".format(
+                x / img.width() * 100
+            ))
             for y in range(img.height()):
                 red, green, blue, a = img.pixelColor(x, y).getRgb()
                 r[red] += 1
@@ -55,6 +61,7 @@ class HistogramWidget(QWidget):
         self.g = g
         self.b = b
 
+        self.set_status("Ready")
         self.update()
 
     def paintEvent(self, e):

@@ -20,6 +20,8 @@ class Separator:
 
 
 class Program(QMainWindow):
+    instance = None
+
     def __init__(self, *size):
         super().__init__()
 
@@ -49,7 +51,7 @@ class Program(QMainWindow):
             ('&File', [
                 ('&Open', self._open),
                 ("", Separator()),
-                ('&Exit', {'triggered': qApp.quit, 'shortcut': 'Ctrl+Q', 'icon':None}),
+                ('&Exit', {'triggered': qApp.quit, 'shortcut': 'Ctrl+Q', 'icon': None}),
             ]),
             ('&Other', [
                 ('x', None),
@@ -94,8 +96,8 @@ class ProgramWidget(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.image = ImageWidget()
-        self.hist = HistogramWidget()
+        self.image = ImageWidget(parent)
+        self.hist = HistogramWidget(parent)
         self.coord = QLabel("", self)
         self.pixel_rgb = QLabel('', self)
         self.pixel_hsv = QLabel('', self)
@@ -106,19 +108,25 @@ class ProgramWidget(QWidget):
 
         self.h_slider.setMinimum(-180)
         self.h_slider.setMaximum(180)
+        self.h_slider.setTickPosition(QSlider.TicksBelow)
+        self.h_slider.setTickInterval(60)
 
         self.s_slider.setMinimum(-255)
         self.s_slider.setMaximum(255)
+        self.s_slider.setTickPosition(QSlider.TicksBelow)
+        self.s_slider.setTickInterval(32)
 
         self.v_slider.setMinimum(-255)
         self.v_slider.setMaximum(255)
+        self.v_slider.setTickPosition(QSlider.TicksBelow)
+        self.v_slider.setTickInterval(32)
 
         self._set_default()
 
         self.image.selection_update.connect(self.selection_upd)
-        self.h_slider.valueChanged[int].connect(self.slider_update)
-        self.s_slider.valueChanged[int].connect(self.slider_update)
-        self.v_slider.valueChanged[int].connect(self.slider_update)
+        self.h_slider.sliderReleased.connect(self.slider_update)
+        self.s_slider.sliderReleased.connect(self.slider_update)
+        self.v_slider.sliderReleased.connect(self.slider_update)
 
         hbox = QHBoxLayout()
         hbox.addWidget(self.image, 20)
@@ -158,9 +166,7 @@ class ProgramWidget(QWidget):
         self.h_slider.setValue(0)
 
     def slider_update(self):
-        self.image.shift_hue = self.h_slider.value()
-        self.image.shift_saturation = self.s_slider.value()
-        self.image.shift_value = self.v_slider.value()
+        self.image.shift_hsv = self.h_slider.value(), self.s_slider.value(), self.v_slider.value()
 
     def selection_upd(self):
         img = self.image.selected
