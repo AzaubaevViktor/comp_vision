@@ -46,25 +46,26 @@ class Program(QMainWindow):
 
         self.program_widget.set_image(image)
 
-    def _save_generator(self, arg):
+    def _save_generator(self, *args):
         def _():
-            self._save_to(arg)
+            self._save_to(*args)
 
         return _
 
-    def _save_to(self, arg):
-        fname = QFileDialog.getSaveFileName(self, 'Save file', os.getcwd())[0]
+    def _save_to(self, is_selected, colors):
+        if self.program_widget.image_widget.imageOrigin is None:
+            return
 
-        img = None
+        text = "Save region " if is_selected else "Save image "
+        text += str(colors)
+        filters = "PNG (*.png);; JPEG (*.jpg *.jpeg)"
+        fname = QFileDialog.getSaveFileName(self, text, os.getcwd(), filters)[0]
 
-        if arg == "RGB":
-            img = self.program_widget.image_widget.ready_image
+        if not fname:
+            self.status("Name empty!")
+            return
 
-        if arg == "HSV":
-            img = self.program_widget.image_widget.get_hsv_image()
-
-        if img is None:
-            raise ValueError("RGB, HSV, not `{}`".format(arg))
+        img = self.program_widget.image_widget.get_image(is_selected, colors)
 
         img.save(fname)
         self.status("Ready")
@@ -75,11 +76,12 @@ class Program(QMainWindow):
                 ('&Open', self._open),
                 ("", Separator()),
                 ('Save to', [
-                    ('RGB', self._save_generator("RGB")),
-                    ('HSV', self._save_generator("HSV"))
+                    ('RGB', self._save_generator(False, "RGB")),
+                    ('HSV', self._save_generator(False, "HSV"))
                 ]),
                 ("Save region to", [
-                    ("Not implemented", None)
+                    ("RGB", self._save_generator(True, "RGB")),
+                    ("HSV", self._save_generator(True, "HSV"))
                 ]),
                 ("", Separator()),
                 ('&Exit', {'triggered': qApp.quit, 'shortcut': 'Ctrl+Q', 'icon': None}),

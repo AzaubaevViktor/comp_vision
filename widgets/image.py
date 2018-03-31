@@ -66,22 +66,29 @@ class ImageWidget(QWidget):
 
         self.need_hsv_recalc = False
 
-    @property
-    def ready_image(self):
-        img = self.imageOrigin.copy()
+    def get_image(self, is_selected, colors):
+        if colors not in ["RGB", "HSV"]:
+            raise ValueError("RGB, HSV, not `{}`".format(colors))
+
+        if is_selected:
+            img = self.selected_origin
+        else:
+            img = self.imageOrigin.copy()
+
         for x in shift_hsv(img, *self._shift_hsv_values):
             self.set_status("Saving: Recalc HSV {:.1f}%".format(
                 x / img.width() * 100
             ))
-        return img
 
-    def get_hsv_image(self):
-        img = self.ready_image
-        for x in rgb_to_hsv(img):
-            self.set_status("Saving: Convert to HSV {:.1f}%".format(
-                x / img.width() * 100
-            ))
-        return img
+        if colors == "RGB":
+            return img
+
+        if colors == "HSV":
+            for x in rgb_to_hsv(img):
+                self.set_status("Saving: Convert to HSV {:.1f}%".format(
+                    x / img.width() * 100
+                ))
+            return img
 
     def to_image_rect(self, rect: QRect):
         rect = QRect(rect)
@@ -205,8 +212,12 @@ class ImageWidget(QWidget):
         self.update()
 
     @property
+    def selected_origin(self) -> QImage:
+        return self.imageOrigin.copy(self.selection_img)
+
+    @property
     def selected(self) -> QImage:
-        img = self.imageOrigin.copy(self.selection_img)
+        img = self.selected_origin
 
         need = 700000 / 30
         resolution = img.height() * img.width()
