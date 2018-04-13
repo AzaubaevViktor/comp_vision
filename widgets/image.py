@@ -63,11 +63,14 @@ class ImageWidget(QWidget):
         print("========= HSV Shift =========")
         print("Res: {:.2f} Kpix".format(res / 1000))
         st = time.time()
-
+        x = None
         for x in shift_hsv(self._image, *self._shift_hsv_values):
-            self.set_status("Recalc HSV {:.1f}%".format(
-                x / self._image.width() * 100
-            ))
+            if isinstance(x, int):
+                self.set_status("Recalc HSV {:.1f}%".format(
+                    x * 100
+                ))
+
+        self._image = x
 
         tm = time.time() - st
         print("Time: {:.2f}s".format(tm))
