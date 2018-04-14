@@ -207,7 +207,7 @@ class ProgramWidget(QWidget):
         self.image_widget.shift_hsv = self.h_slider.value(), self.s_slider.value(), self.v_slider.value()
 
     def selection_upd(self):
-        img = self.image_widget.selected
+        img = self.image_widget.selected(self.hist_widget.speed)
         print(img.width(), img.height())
 
         coord = self.image_widget.selection_img

@@ -227,11 +227,10 @@ class ImageWidget(QWidget):
     def selected_origin(self) -> QImage:
         return self.imageOrigin.copy(self.selection_img)
 
-    @property
-    def selected(self) -> QImage:
+    def selected(self, speed) -> QImage:
         img = self.selected_origin
 
-        need = 700000 / 30
+        need = speed / 30
         resolution = img.height() * img.width()
 
         if self.endMouse or resolution < need:

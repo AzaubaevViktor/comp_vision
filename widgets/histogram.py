@@ -1,22 +1,28 @@
 import time
 from math import log
+
+import numpy as np
 from PyQt5.QtGui import QPainter, QPen, QPixmap, QImage
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import Qt
 
 from utils import QColor
+from .processing import qimageview
 
 
-def timechecker(orig):
+def timechecker(orig_func):
     def func(self, img: QImage):
         res = img.width() * img.height()
         print("======== Histogramm ==========")
         print("Res: {:.2f} Kpix".format(res / 1000))
         st = time.time()
-        orig(self, img)
+        orig_func(self, img)
         tm = time.time() - st
+        speed = res / tm
         print("Time: {:.2f}s".format(tm))
-        print("Speed: {:.2f}Kpix/s".format(res / 1000 / tm))
+        print("Speed: {:.2f}Kpix/s".format(speed / 1000))
+        self.speed = self.speed * 0.9 + speed * 0.1
+
     return func
 
 
@@ -28,6 +34,7 @@ class HistogramWidget(QWidget):
         self.g = [0] * 256
         self.b = [0] * 256
         self.initUI()
+        self.speed = 100000
 
     def set_status(self, msg, sec=0):
         self.parent.status(msg, sec)
@@ -37,6 +44,40 @@ class HistogramWidget(QWidget):
 
     @timechecker
     def calc_image(self, img: QImage):
+        rgb = qimageview(img)
+        self.set_status("Calculating histogram... {:.1f}".format(0))
+        self.r = np.bincount(rgb[..., 0].flatten())
+        self.set_status("Calculating histogram... {:.1f}".format(25))
+        self.g = np.bincount(rgb[..., 1].flatten())
+        self.set_status("Calculating histogram... {:.1f}".format(50))
+        self.b = np.bincount(rgb[..., 2].flatten())
+        self.set_status("Calculating histogram... {:.1f}".format(75))
+
+        mx = max(max(self.r), max(self.g), max(self.b))
+
+        self.r = np.log(self.r + 1) / log(mx + 1)
+        self.g = np.log(self.g + 1) / log(mx + 1)
+        self.b = np.log(self.b + 1) / log(mx + 1)
+
+        if len(self.r) < 256:
+            self.r = np.append(self.r, [0] * (256 - len(self.r)))
+        if len(self.g) < 256:
+            self.g = np.append(self.g, [0] * (256 - len(self.g)))
+        if len(self.b) < 256:
+            self.b = np.append(self.b, [0] * (256 - len(self.b)))
+
+        self.r = list(self.r)
+        self.g = list(self.g)
+        self.b = list(self.b)
+
+
+        self.set_status("Calculating histogram... {:.1f}".format(100))
+
+        self.set_status("Ready")
+        self.update()
+
+    @timechecker
+    def _calc_image(self, img: QImage):
         r = [0] * 256
         g = [0] * 256
         b = [0] * 256
