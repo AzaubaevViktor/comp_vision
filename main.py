@@ -149,15 +149,15 @@ class ProgramWidget(QWidget):
         self.h_slider.setTickPosition(QSlider.TicksBelow)
         self.h_slider.setTickInterval(60)
 
-        self.s_slider.setMinimum(-255)
-        self.s_slider.setMaximum(255)
+        self.s_slider.setMinimum(-100)
+        self.s_slider.setMaximum(100)
         self.s_slider.setTickPosition(QSlider.TicksBelow)
-        self.s_slider.setTickInterval(32)
+        self.s_slider.setTickInterval(10)
 
-        self.v_slider.setMinimum(-255)
-        self.v_slider.setMaximum(255)
+        self.v_slider.setMinimum(-100)
+        self.v_slider.setMaximum(100)
         self.v_slider.setTickPosition(QSlider.TicksBelow)
-        self.v_slider.setTickInterval(32)
+        self.v_slider.setTickInterval(10)
 
         self._set_default()
 

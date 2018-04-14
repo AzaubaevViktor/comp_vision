@@ -9,22 +9,6 @@ from qimage2ndarray.qimageview_python import qimageview as _qimageview
 
 
 def _rgb_to_hsv(rgb: np.ndarray) -> np.ndarray:
-    """
-    >>> from colorsys import rgb_to_hsv as rgb_to_hsv_single
-    >>> 'h={:.2f} s={:.2f} v={:.2f}'.format(*rgb_to_hsv_single(50, 120, 239))
-    'h=0.60 s=0.79 v=239.00'
-    >>> 'h={:.2f} s={:.2f} v={:.2f}'.format(*rgb_to_hsv_single(163, 200, 130))
-    'h=0.25 s=0.35 v=200.00'
-    >>> np.set_printoptions(2)
-    >>> rgb_to_hsv(np.array([[[50, 120, 239], [163, 200, 130]]]))
-    array([[[   0.6 ,    0.79,  239.  ],
-            [   0.25,    0.35,  200.  ]]])
-    >>> 'h={:.2f} s={:.2f} v={:.2f}'.format(*rgb_to_hsv_single(100, 100, 100))
-    'h=0.00 s=0.00 v=100.00'
-    >>> rgb_to_hsv(np.array([[50, 120, 239], [100, 100, 100]]))
-    array([[   0.6 ,    0.79,  239.  ],
-           [   0.  ,    0.  ,  100.  ]])
-    """
     input_shape = rgb.shape
     rgb = rgb.reshape(-1, 4)
     r, g, b, a = rgb[:, 0], rgb[:, 1], rgb[:, 2], rgb[:, 3]
@@ -46,6 +30,10 @@ def _rgb_to_hsv(rgb: np.ndarray) -> np.ndarray:
     h[minc == maxc] = 0.0
 
     h = (h / 6.0) % 1.0
+    h *= 360
+    s *= 100
+    v = v * (100 / 255)
+
     res = np.dstack([h, s, v, a])
     return res.reshape(input_shape)
 
@@ -71,25 +59,29 @@ def _hsv_to_rgb(hsv: np.ndarray) -> np.ndarray:
     hsv = hsv.reshape(-1, 4)
     h, s, v, a = hsv[:, 0], hsv[:, 1], hsv[:, 2], hsv[:, 3]
 
-    i = np.int32(h * 6.0)
-    f = (h * 6.0) - i
-    p = v * (1.0 - s)
-    q = v * (1.0 - s * f)
-    t = v * (1.0 - s * (1.0 - f))
+    i = np.int32((h / 60) % 6)
+    # f = (h * 6.0) - i
+    v_min = v * (100. - s) / 100.
+    # v_dec = v * (1.0 - s * f)
+    # v_inc = v * (1.0 - s * (1.0 - f))
+    add = (v - v_min) * (h % 60) / 60.
+    v_inc = v_min + add
+    v_dec = v - add
     i = i % 6
 
     a: np.ndarray = a
 
     rgb = np.zeros_like(hsv)
-    v, t, p, q, a = v.reshape(-1, 1), t.reshape(-1, 1), p.reshape(-1, 1), q.reshape(-1, 1), a.reshape(-1, 1)
-    print(a.shape, v.shape)
-    rgb[i == 0] = np.hstack([v, t, p, a])[i == 0]
-    rgb[i == 1] = np.hstack([q, v, p, a])[i == 1]
-    rgb[i == 2] = np.hstack([p, v, t, a])[i == 2]
-    rgb[i == 3] = np.hstack([p, q, v, a])[i == 3]
-    rgb[i == 4] = np.hstack([t, p, v, a])[i == 4]
-    rgb[i == 5] = np.hstack([v, p, q, a])[i == 5]
+    v, v_inc, v_min, v_dec, a = v.reshape(-1, 1), v_inc.reshape(-1, 1), v_min.reshape(-1, 1), v_dec.reshape(-1, 1), a.reshape(-1, 1)
+    rgb[i == 0] = np.hstack([v, v_inc, v_min, a])[i == 0]
+    rgb[i == 1] = np.hstack([v_dec, v, v_min, a])[i == 1]
+    rgb[i == 2] = np.hstack([v_min, v, v_inc, a])[i == 2]
+    rgb[i == 3] = np.hstack([v_min, v_dec, v, a])[i == 3]
+    rgb[i == 4] = np.hstack([v_inc, v_min, v, a])[i == 4]
+    rgb[i == 5] = np.hstack([v, v_min, v_dec, a])[i == 5]
     rgb[s == 0.0] = np.hstack([v, v, v, a])[s == 0.0]
+
+    rgb *= 2.55
 
     return rgb.reshape(input_shape)
 
@@ -137,25 +129,19 @@ def shift_hsv(image: QImage, dh, ds, dv):
     yield 0.18
     hsv = _rgb_to_hsv(rgb)
     yield 0.36
-    hsv[..., 0] += dh / 360
-    hsv[..., 0] %= 1.0
+    hsv[..., 0] += dh
+    hsv[..., 0] %= 360
     yield 0.54
-    hsv[..., 1] = np.ones_like(hsv[..., 1])
-    # hsv[..., 1] += ds / 255
-    # np.clip(hsv[..., 1], 0, 1, out=hsv[..., 1])
+    hsv[..., 1] += ds
+    np.clip(hsv[..., 1], 0, 100, out=hsv[..., 1])
     yield 0.72
     hsv[..., 2] += dv
-    np.clip(hsv[..., 2], 0, 255, out=hsv[..., 2])
+    np.clip(hsv[..., 2], 0, 100, out=hsv[..., 2])
     yield 0.9
-    hsv[..., 1] %= 1.0
 
     new_img = _hsv_to_rgb(hsv)
-    # new_img = rgb
     yield 1
-    # new_img[..., 2], new_img[..., 0] = new_img[..., 0], new_img[..., 2]
-    # new_img[..., 0], new_img[..., 2] = new_img[..., 0], new_img[..., 2]
     img: QImage = array2qimage(new_img)
-    img = img.convertToFormat(QImage.Format_RGBA8888)
     yield img
 
 
