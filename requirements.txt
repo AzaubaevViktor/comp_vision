@@ -1,0 +1,4 @@
+numpy==1.14.2
+PyQt5==5.10.1
+qimage2ndarray==1.6
+sip==4.19.8
