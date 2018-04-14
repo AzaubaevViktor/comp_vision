@@ -60,13 +60,13 @@ def _hsv_to_rgb(hsv: np.ndarray) -> np.ndarray:
     h, s, v, a = hsv[:, 0], hsv[:, 1], hsv[:, 2], hsv[:, 3]
 
     i = np.int32((h / 60) % 6)
-    # f = (h * 6.0) - i
+    _t = (h % 60.) / 60.
+
     v_min = v * (100. - s) / 100.
-    # v_dec = v * (1.0 - s * f)
-    # v_inc = v * (1.0 - s * (1.0 - f))
-    add = (v - v_min) * (h % 60) / 60.
-    v_inc = v_min + add
-    v_dec = v - add
+    # add = (v - v_min) * (h % 60) / 60.
+    # add = v * s / 100 * _t
+    v_inc = v * (1 - s * (1 - _t) * 0.01)  # v_min + add
+    v_dec = v * (1 - s * _t * 0.01)
     i = i % 6
 
     a: np.ndarray = a
