@@ -1,4 +1,5 @@
 import time
+
 from PyQt5 import QtGui
 
 from PyQt5.QtCore import QObject, pyqtSignal, QRect, QPoint, Qt
@@ -6,7 +7,7 @@ from PyQt5.QtGui import QPainter, QPixmap, QImage
 from PyQt5.QtWidgets import QWidget
 
 from utils import QColor, hsv_ranged
-from .processing import shift_hsv, rgb_to_hsv
+from .processing import shift_hsv, rgb_to_hsv, gaussian
 
 
 class Communicate(QObject):
@@ -22,11 +23,15 @@ class ImageWidget(QWidget):
 
         self.imageOrigin: QImage = None
         self._rescaled_image: QImage = None
+        self._shifted_image: QImage = None
         self._image: QImage = None
 
         self.selection: QRect = None
         self.selection_img: QRect = None
         self.coef = None
+
+        self._filter_id = 0
+        self._filter_args = tuple()
 
         self._communicate = Communicate()
 
@@ -52,6 +57,7 @@ class ImageWidget(QWidget):
         self._shift_hsv_values = list(value)
 
         self._do_shift_hsv()
+        self._apply_filter()
         self.update()
 
     def _do_shift_hsv(self):
@@ -59,7 +65,7 @@ class ImageWidget(QWidget):
             return
 
         if self._shift_hsv_values == [0, 0, 0]:
-            self._image = self._rescaled_image
+            self._shifted_image = self._rescaled_image
             return
 
         res = self._rescaled_image.width() * self._rescaled_image.height()
@@ -73,11 +79,24 @@ class ImageWidget(QWidget):
                     x * 100
                 ))
 
-        self._image: QImage = x
+        self._shifted_image: QImage = x
 
         tm = time.time() - st
         print("Time: {:.2f}s".format(tm))
         print("Speed: {:.2f}Kpix/s".format(res / 1000 / tm))
+
+    def set_filter(self, filter_id, *args):
+        self._filter_id = filter_id
+        self._filter_args = args
+        self._apply_filter()
+        self.update()
+
+    def _apply_filter(self):
+        if self._filter_id == 1:
+            sigma = self._filter_args[0]
+            self._image = gaussian(self._shifted_image, sigma)
+        else:
+            self._image = self._shifted_image
 
     def get_image(self, is_selected, colors):
         if colors not in ["RGB", "HSV"]:
@@ -143,6 +162,7 @@ class ImageWidget(QWidget):
     def resizeEvent(self, event: QtGui.QResizeEvent):
         self._rescale()
         self._do_shift_hsv()
+        self._apply_filter()
         self.update()
 
     def _draw_widget(self, event, qp):
@@ -199,6 +219,7 @@ class ImageWidget(QWidget):
         self.coef = None
         self._rescale()
         self._do_shift_hsv()
+        self._apply_filter()
         self.update()
 
     def mousePressEvent(self, event):

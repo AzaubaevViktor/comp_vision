@@ -181,20 +181,36 @@ class ProgramWidget(QWidget):
 
     def _filter_buttons(self, vbox):
         self.filter_rbtn = QButtonGroup()
+        hbox = QHBoxLayout()
 
-        radio1 = QRadioButton("test", self)
+        radio1 = QRadioButton("Отключить", self)
         self.filter_rbtn.addButton(radio1, 0)
-        vbox.addWidget(radio1)
+        hbox.addWidget(radio1)
         radio1.setChecked(True)
 
-        radio2 = QRadioButton("lkjh", self)
+        radio2 = QRadioButton("Гаусса", self)
         self.filter_rbtn.addButton(radio2, 1)
-        vbox.addWidget(radio2)
+        hbox.addWidget(radio2)
 
-        radio1.toggled.connect(self._filter_change)
+        radio3 = QRadioButton("Собеля", self)
+        self.filter_rbtn.addButton(radio3, 2)
+        hbox.addWidget(radio3)
+
+        radio4 = QRadioButton("Габора", self)
+        self.filter_rbtn.addButton(radio4, 3)
+        hbox.addWidget(radio4)
+
+        vbox.addLayout(hbox)
+
+        slider_box, self.sigma_slider = self._get_slider_box("σ", 0, 10, 1, self._filter_change)
+
+        vbox.addLayout(slider_box)
+        self.filter_rbtn.buttonClicked.connect(self._filter_change)
 
     def _filter_change(self):
-        print(self.filter_rbtn.checkedId())
+        filter_id = self.filter_rbtn.checkedId()
+        param1 = self.sigma_slider.value()
+        self.image_widget.set_filter(filter_id, param1)
 
     def _get_slider_box(self, label_name, _min, _max, _interval, callback, layout=Qt.Horizontal) -> Tuple[QBoxLayout, QSlider]:
         slider = QSlider(layout, self)

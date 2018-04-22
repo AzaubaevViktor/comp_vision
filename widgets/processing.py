@@ -1,4 +1,6 @@
 import numpy as np
+import scipy
+from scipy.ndimage import gaussian_filter
 from numpy import ndarray
 from PyQt5 import QtGui
 from PyQt5.QtGui import QImage
@@ -142,6 +144,20 @@ def shift_hsv(image: QImage, dh, ds, dv):
     yield 1
     img: QImage = array2qimage(new_img)
     yield img
+
+
+def gaussian(image: QImage, sigma: int) -> QImage:
+    rgb = qimageview(image.copy())
+
+    filtered = np.zeros_like(rgb)
+    # red = rgb[..., 0]
+    filtered[..., 0] = gaussian_filter(rgb[..., 0], sigma)
+    filtered[..., 1] = gaussian_filter(rgb[..., 1], sigma)
+    filtered[..., 2] = gaussian_filter(rgb[..., 2], sigma)
+    filtered[..., 3] = rgb[..., 3]
+
+    img: QImage = array2qimage(filtered)
+    return img
 
 
 def shift_old_hsv(image: QImage, dh, ds, dv):
