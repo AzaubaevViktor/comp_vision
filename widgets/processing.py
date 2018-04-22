@@ -1,6 +1,7 @@
 import numpy as np
 import scipy
 from scipy.ndimage import gaussian_filter
+from scipy.signal import convolve2d
 from numpy import ndarray
 from PyQt5 import QtGui
 from PyQt5.QtGui import QImage
@@ -154,6 +155,30 @@ def gaussian(image: QImage, sigma: int) -> QImage:
     filtered[..., 0] = gaussian_filter(rgb[..., 0], sigma)
     filtered[..., 1] = gaussian_filter(rgb[..., 1], sigma)
     filtered[..., 2] = gaussian_filter(rgb[..., 2], sigma)
+    # scipy.signal.convolve2d
+    filtered[..., 3] = rgb[..., 3]
+
+    img: QImage = array2qimage(filtered)
+    return img
+
+
+_sobel_x = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
+_sobel_y = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
+
+
+def _sobel_one_axis(part):
+    return (convolve2d(part, _sobel_y, mode="same") ** 2
+     + convolve2d(part, _sobel_x, mode="same") ** 2) ** 0.5
+
+
+def sobel(image: QImage) -> QImage:
+    rgb = qimageview(image.copy())
+
+    filtered = np.zeros_like(rgb)
+
+    filtered[..., 0] = _sobel_one_axis(rgb[..., 0])
+    filtered[..., 1] = _sobel_one_axis(rgb[..., 1])
+    filtered[..., 2] = _sobel_one_axis(rgb[..., 2])
     filtered[..., 3] = rgb[..., 3]
 
     img: QImage = array2qimage(filtered)

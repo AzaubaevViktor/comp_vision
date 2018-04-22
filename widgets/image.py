@@ -7,7 +7,7 @@ from PyQt5.QtGui import QPainter, QPixmap, QImage
 from PyQt5.QtWidgets import QWidget
 
 from utils import QColor, hsv_ranged
-from .processing import shift_hsv, rgb_to_hsv, gaussian
+from .processing import shift_hsv, rgb_to_hsv, gaussian, sobel
 
 
 class Communicate(QObject):
@@ -95,6 +95,8 @@ class ImageWidget(QWidget):
         if self._filter_id == 1:
             sigma = self._filter_args[0]
             self._image = gaussian(self._shifted_image, sigma)
+        elif self._filter_id == 2:
+            self._image = sobel(self._shifted_image)
         else:
             self._image = self._shifted_image
 
