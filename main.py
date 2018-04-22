@@ -8,7 +8,8 @@ from typing import Tuple
 
 from PyQt5.QtGui import QIcon, QPixmap, QImage
 from PyQt5.QtWidgets import QApplication, QWidget, QAction, \
-    qApp, QMainWindow, QFileDialog, QLabel, QHBoxLayout, QVBoxLayout, QSlider, QMenu, QBoxLayout
+    qApp, QMainWindow, QFileDialog, QLabel, QHBoxLayout, QVBoxLayout, QSlider, QMenu, QBoxLayout, QRadioButton, \
+    QButtonGroup, QCheckBox
 from PyQt5.QtCore import Qt
 
 from widgets import ImageWidget, HistogramWidget
@@ -138,6 +139,9 @@ class ProgramWidget(QWidget):
         self.pixel_hsv_label = QLabel('', self)
         self.pixel_lab_label = QLabel('', self)
 
+        self.hsv_checkbox = QCheckBox("Shift HSV")
+        self.hsv_checkbox.toggled.connect(self.slider_update)
+
         h_slider_box, self.h_slider = self._get_slider_box(
             "H:", -180, 180, 60, self.slider_update
         )
@@ -164,13 +168,33 @@ class ProgramWidget(QWidget):
         vbox.addWidget(self.pixel_hsv_label)
         vbox.addWidget(self.pixel_lab_label)
 
+        vbox.addWidget(self.hsv_checkbox)
         vbox.addLayout(h_slider_box)
         vbox.addLayout(s_slider_box)
         vbox.addLayout(v_slider_box)
 
+        self._filter_buttons(vbox)
+
         hbox.addLayout(vbox, 1)
 
         self.setLayout(hbox)
+
+    def _filter_buttons(self, vbox):
+        self.filter_rbtn = QButtonGroup()
+
+        radio1 = QRadioButton("test", self)
+        self.filter_rbtn.addButton(radio1, 0)
+        vbox.addWidget(radio1)
+        radio1.setChecked(True)
+
+        radio2 = QRadioButton("lkjh", self)
+        self.filter_rbtn.addButton(radio2, 1)
+        vbox.addWidget(radio2)
+
+        radio1.toggled.connect(self._filter_change)
+
+    def _filter_change(self):
+        print(self.filter_rbtn.checkedId())
 
     def _get_slider_box(self, label_name, _min, _max, _interval, callback, layout=Qt.Horizontal) -> Tuple[QBoxLayout, QSlider]:
         slider = QSlider(layout, self)
@@ -196,7 +220,10 @@ class ProgramWidget(QWidget):
         self.h_slider.setValue(0)
 
     def slider_update(self):
-        self.image_widget.shift_hsv = self.h_slider.value(), self.s_slider.value(), self.v_slider.value()
+        if self.hsv_checkbox.isChecked():
+            self.image_widget.shift_hsv = self.h_slider.value(), self.s_slider.value(), self.v_slider.value()
+        else:
+            self.image_widget.shift_hsv = [0, 0, 0]
 
     def selection_upd(self):
         img = self.image_widget.selected(self.hist_widget.speed)

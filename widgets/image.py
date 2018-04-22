@@ -20,11 +20,12 @@ class ImageWidget(QWidget):
 
         self.parent = parent
 
-        self.imageOrigin = None  # type: QImage
-        self._image = None  # type: QImage
+        self.imageOrigin: QImage = None
+        self._rescaled_image: QImage = None
+        self._image: QImage = None
 
-        self.selection = None  # type: QRect
-        self.selection_img = None  # type: QRect
+        self.selection: QRect = None
+        self.selection_img: QRect = None
         self.coef = None
 
         self._communicate = Communicate()
@@ -36,7 +37,6 @@ class ImageWidget(QWidget):
         self.endMouse = True
 
         self._shift_hsv_values = [0, 0, 0]
-        self.need_hsv_recalc = False
     
     def set_status(self, msg, sec=0):
         self.parent.status(msg, sec)
@@ -50,33 +50,34 @@ class ImageWidget(QWidget):
         if len(value) != 3:
             raise ValueError("Shift_hsv may be 3 int!")
         self._shift_hsv_values = list(value)
-        self.need_hsv_recalc = True
 
-        self._rescale()
+        self._do_shift_hsv()
         self.update()
 
     def _do_shift_hsv(self):
-        if not self.need_hsv_recalc:
+        if self._rescaled_image is None:
             return
 
-        res = self._image.width() * self._image.height()
+        if self._shift_hsv_values == [0, 0, 0]:
+            self._image = self._rescaled_image
+            return
+
+        res = self._rescaled_image.width() * self._rescaled_image.height()
         print("========= HSV Shift =========")
         print("Res: {:.2f} Kpix".format(res / 1000))
         st = time.time()
         x = None
-        for x in shift_hsv(self._image, *self._shift_hsv_values):
+        for x in shift_hsv(self._rescaled_image, *self._shift_hsv_values):
             if isinstance(x, int):
                 self.set_status("Recalc HSV {:.1f}%".format(
                     x * 100
                 ))
 
-        self._image = x
+        self._image: QImage = x
 
         tm = time.time() - st
         print("Time: {:.2f}s".format(tm))
         print("Speed: {:.2f}Kpix/s".format(res / 1000 / tm))
-
-        self.need_hsv_recalc = False
 
     def get_image(self, is_selected, colors):
         if colors not in ["RGB", "HSV"]:
@@ -141,6 +142,8 @@ class ImageWidget(QWidget):
 
     def resizeEvent(self, event: QtGui.QResizeEvent):
         self._rescale()
+        self._do_shift_hsv()
+        self.update()
 
     def _draw_widget(self, event, qp):
         qp.setBrush(QColor(0, 0, 0))
@@ -166,6 +169,10 @@ class ImageWidget(QWidget):
         if self.imageOrigin is None:
             return
 
+        if self.imageOrigin.height() == 0 or self.imageOrigin.width() == 0:
+            self.imageOrigin = None
+            return
+
         self.set_status("Rescaling...")
 
         aspect = self.width() / self.height()
@@ -182,9 +189,8 @@ class ImageWidget(QWidget):
         if self.selection is not None:
             self.selection = self.from_image_rect(self.selection_img)
 
-        self._image = _image
+        self._rescaled_image = _image
 
-        self._do_shift_hsv()
         self.set_status("Ready")
 
     def set_image(self, image: QImage):
@@ -192,6 +198,7 @@ class ImageWidget(QWidget):
         self.selection = None
         self.coef = None
         self._rescale()
+        self._do_shift_hsv()
         self.update()
 
     def mousePressEvent(self, event):

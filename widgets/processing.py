@@ -92,7 +92,7 @@ def getdata(image):
     return (int(image.bits()), False)
 
 
-def qimageview(image):
+def qimageview(image: QImage) -> ndarray:
     if not isinstance(image, QtGui.QImage):
         raise TypeError("image argument must be a QImage instance")
 
@@ -124,7 +124,7 @@ def qimageview(image):
 
 def shift_hsv(image: QImage, dh, ds, dv):
     yield 0.0
-    rgb = qimageview(image)
+    rgb = qimageview(image.copy())
     yield 0.18
     hsv = _rgb_to_hsv(rgb)
     yield 0.36
