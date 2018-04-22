@@ -4,11 +4,11 @@ import random
 import sys
 
 import os
-import time
+from typing import Tuple
 
 from PyQt5.QtGui import QIcon, QPixmap, QImage
 from PyQt5.QtWidgets import QApplication, QWidget, QAction, \
-    qApp, QMainWindow, QFileDialog, QLabel, QHBoxLayout, QVBoxLayout, QSlider, QMenu
+    qApp, QMainWindow, QFileDialog, QLabel, QHBoxLayout, QVBoxLayout, QSlider, QMenu, QBoxLayout
 from PyQt5.QtCore import Qt
 
 from widgets import ImageWidget, HistogramWidget
@@ -138,31 +138,21 @@ class ProgramWidget(QWidget):
         self.pixel_hsv_label = QLabel('', self)
         self.pixel_lab_label = QLabel('', self)
 
-        self.h_slider = QSlider(Qt.Horizontal, self)
-        self.s_slider = QSlider(Qt.Horizontal, self)
-        self.v_slider = QSlider(Qt.Horizontal, self)
+        h_slider_box, self.h_slider = self._get_slider_box(
+            "H:", -180, 180, 60, self.slider_update
+        )
 
-        self.h_slider.setMinimum(-180)
-        self.h_slider.setMaximum(180)
-        self.h_slider.setTickPosition(QSlider.TicksBelow)
-        self.h_slider.setTickInterval(60)
+        s_slider_box, self.s_slider = self._get_slider_box(
+            "S:", -100, 100, 10, self.slider_update
+        )
 
-        self.s_slider.setMinimum(-100)
-        self.s_slider.setMaximum(100)
-        self.s_slider.setTickPosition(QSlider.TicksBelow)
-        self.s_slider.setTickInterval(10)
-
-        self.v_slider.setMinimum(-100)
-        self.v_slider.setMaximum(100)
-        self.v_slider.setTickPosition(QSlider.TicksBelow)
-        self.v_slider.setTickInterval(10)
+        v_slider_box, self.v_slider = self._get_slider_box(
+            "V:", -100, 100, 10, self.slider_update
+        )
 
         self._set_default()
 
         self.image_widget.selection_update.connect(self.selection_upd)
-        self.h_slider.sliderReleased.connect(self.slider_update)
-        self.s_slider.sliderReleased.connect(self.slider_update)
-        self.v_slider.sliderReleased.connect(self.slider_update)
 
         hbox = QHBoxLayout()
         hbox.addWidget(self.image_widget, 20)
@@ -174,24 +164,28 @@ class ProgramWidget(QWidget):
         vbox.addWidget(self.pixel_hsv_label)
         vbox.addWidget(self.pixel_lab_label)
 
-        h_slider_box = QHBoxLayout()
-        h_slider_box.addWidget(QLabel("H:", self))
-        h_slider_box.addWidget(self.h_slider)
         vbox.addLayout(h_slider_box)
-
-        s_slider_box = QHBoxLayout()
-        s_slider_box.addWidget(QLabel("S:", self))
-        s_slider_box.addWidget(self.s_slider)
         vbox.addLayout(s_slider_box)
-
-        v_slider_box = QHBoxLayout()
-        v_slider_box.addWidget(QLabel("V:", self))
-        v_slider_box.addWidget(self.v_slider)
         vbox.addLayout(v_slider_box)
 
         hbox.addLayout(vbox, 1)
 
         self.setLayout(hbox)
+
+    def _get_slider_box(self, label_name, _min, _max, _interval, callback, layout=Qt.Horizontal) -> Tuple[QBoxLayout, QSlider]:
+        slider = QSlider(layout, self)
+        slider.setMinimum(_min)
+        slider.setMaximum(_max)
+        slider.setTickPosition(QSlider.TicksBelow)
+        slider.setTickInterval(_interval)
+
+        slider.sliderReleased.connect(callback)
+
+        box = QHBoxLayout()
+        box.addWidget(QLabel(label_name, self))
+        box.addWidget(slider)
+
+        return box, slider
 
     def _set_default(self):
         self.coord_label.setText("Select pixel")
