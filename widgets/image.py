@@ -55,7 +55,7 @@ class ImageWidget(QWidget):
         self._rescale()
         self.update()
 
-    def _shift_hsv(self):
+    def _do_shift_hsv(self):
         if not self.need_hsv_recalc:
             return
 
@@ -102,7 +102,7 @@ class ImageWidget(QWidget):
                 ))
             return img
 
-    def to_image_rect(self, rect: QRect):
+    def to_image_rect(self, rect: QRect) -> QRect:
         rect = QRect(rect)
         if rect.top() > rect.bottom():
             _top, _bottom = rect.top(), rect.bottom()
@@ -118,16 +118,16 @@ class ImageWidget(QWidget):
             self.to_image_coord(rect.bottomRight())
         )
 
-    def to_image_coord(self, point: QPoint):
+    def to_image_coord(self, point: QPoint) -> QPoint:
         return QPoint(point.x() * self.coef, point.y() * self.coef)
 
-    def from_image_rect(self, rect: QRect):
+    def from_image_rect(self, rect: QRect) -> QRect:
         return QRect(
             self.from_image_coord(rect.topLeft()),
             self.from_image_coord(rect.bottomRight())
         )
 
-    def from_image_coord(self, point: QPoint):
+    def from_image_coord(self, point: QPoint) -> QPoint:
         return QPoint(point.x() / self.coef, point.y() / self.coef)
 
     def _init_ui(self):
@@ -147,7 +147,7 @@ class ImageWidget(QWidget):
         qp.setPen(QColor(0, 0, 0))
 
         if self.imageOrigin is None:
-            qp.drawText(event.rect(), Qt.AlignCenter, "Open image")
+            qp.drawText(event.rect(), Qt.AlignCenter, "No image")
         else:
             qp.drawImage(0, 0, self._image)
 
@@ -184,7 +184,7 @@ class ImageWidget(QWidget):
 
         self._image = _image
 
-        self._shift_hsv()
+        self._do_shift_hsv()
         self.set_status("Ready")
 
     def set_image(self, image: QImage):

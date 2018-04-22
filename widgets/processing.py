@@ -5,7 +5,6 @@ from PyQt5.QtGui import QImage
 
 from utils import QColor, hsv_ranged, inrange
 from qimage2ndarray import array2qimage
-from qimage2ndarray.qimageview_python import qimageview as _qimageview
 
 
 def _rgb_to_hsv(rgb: np.ndarray) -> np.ndarray:

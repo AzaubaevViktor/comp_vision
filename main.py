@@ -4,6 +4,7 @@ import random
 import sys
 
 import os
+import time
 
 from PyQt5.QtGui import QIcon, QPixmap, QImage
 from PyQt5.QtWidgets import QApplication, QWidget, QAction, \
@@ -13,6 +14,7 @@ from PyQt5.QtCore import Qt
 from widgets import ImageWidget, HistogramWidget
 
 from utils import QColor
+from widgets.processing import shift_hsv
 
 
 class Separator:
@@ -85,10 +87,6 @@ class Program(QMainWindow):
                 ]),
                 ("", Separator()),
                 ('&Exit', {'triggered': qApp.quit, 'shortcut': 'Ctrl+Q', 'icon': None}),
-            ]),
-            ('&Other', [
-                ('x', None),
-                ('y', None),
             ]),
         ]
 
