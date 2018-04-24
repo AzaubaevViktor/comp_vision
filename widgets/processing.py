@@ -168,7 +168,7 @@ _sobel_y = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
 
 def _sobel_one_axis(part):
     return (convolve2d(part, _sobel_y, mode="same") ** 2
-     + convolve2d(part, _sobel_x, mode="same") ** 2) ** 0.5
+            + convolve2d(part, _sobel_x, mode="same") ** 2) ** 0.5
 
 
 def sobel(image: QImage) -> QImage:
