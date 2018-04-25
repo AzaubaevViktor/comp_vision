@@ -7,6 +7,7 @@ from PyQt5.QtGui import QPainter, QPixmap, QImage
 from PyQt5.QtWidgets import QWidget
 
 from utils import QColor, hsv_ranged
+from .gabor import gabor
 from .processing import shift_hsv, rgb_to_hsv, gaussian, sobel
 
 
@@ -92,11 +93,19 @@ class ImageWidget(QWidget):
         self.update()
 
     def _apply_filter(self):
+        if self._shifted_image is None:
+            self._image = self._shifted_image
+            return
+
         if self._filter_id == 1:
             sigma = self._filter_args[0]
             self._image = gaussian(self._shifted_image, sigma)
         elif self._filter_id == 2:
             self._image = sobel(self._shifted_image)
+        elif self._filter_id == 3:
+            theta = self._filter_args[0]
+
+            self._image = gabor(self._shifted_image, theta)
         else:
             self._image = self._shifted_image
 

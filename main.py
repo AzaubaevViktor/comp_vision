@@ -202,15 +202,34 @@ class ProgramWidget(QWidget):
 
         vbox.addLayout(hbox)
 
-        slider_box, self.sigma_slider = self._get_slider_box("σ", 0, 10, 1, self._filter_change)
+        slider_box, self.sigma_slider = self._get_slider_box("σ", 0, 10, 0.5, self._filter_change)
 
         vbox.addLayout(slider_box)
         self.filter_rbtn.buttonClicked.connect(self._filter_change)
 
     def _filter_change(self):
         filter_id = self.filter_rbtn.checkedId()
-        param1 = self.sigma_slider.value()
+        self._update_sigma_slider(filter_id)
+        param1 = self.sigma_slider.value() / 10
         self.image_widget.set_filter(filter_id, param1)
+
+    def _update_sigma_slider(self, filter_id):
+        if filter_id == 1:
+            self.sigma_slider.setEnabled(True)
+            self.sigma_slider.setText("σ")
+            self.sigma_slider.setMinimum(0)
+            self.sigma_slider.setMaximum(100)
+            self.sigma_slider.setTickInterval(1)
+        elif filter_id == 3:
+            self.sigma_slider.setEnabled(True)
+            self.sigma_slider.setText("θ")
+            # self.sigma_slider.setValue(1)
+            self.sigma_slider.setMinimum(0)
+            self.sigma_slider.setMaximum(3600)
+            self.sigma_slider.setTickInterval(50)
+        else:
+            self.sigma_slider.setText("-")
+            self.sigma_slider.setDisabled(True)
 
     def _get_slider_box(self, label_name, _min, _max, _interval, callback, layout=Qt.Horizontal) -> Tuple[QBoxLayout, QSlider]:
         slider = QSlider(layout, self)
@@ -222,8 +241,15 @@ class ProgramWidget(QWidget):
         slider.sliderReleased.connect(callback)
 
         box = QHBoxLayout()
-        box.addWidget(QLabel(label_name, self))
+        label = QLabel(label_name, self)
+        box.addWidget(label)
         box.addWidget(slider)
+        slider._label = label
+
+        def setText(text):
+            slider._label.setText(text)
+
+        slider.setText = setText
 
         return box, slider
 

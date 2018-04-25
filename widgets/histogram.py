@@ -41,6 +41,7 @@ class HistogramWidget(QWidget):
 
     def initUI(self):
         self.setMinimumSize(258, 16)
+        self.setMaximumWidth(258)
 
     @timechecker
     def calc_image(self, img: QImage):
@@ -69,7 +70,6 @@ class HistogramWidget(QWidget):
         self.r = list(self.r)
         self.g = list(self.g)
         self.b = list(self.b)
-
 
         self.set_status("Calculating histogram... {:.1f}".format(100))
 
